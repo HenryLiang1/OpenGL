@@ -1,4 +1,3 @@
-
 #include "..\Dependencies\freeglew\freeglut.h"
 #include "ObjReader.h"
 #include <fstream>
@@ -12,14 +11,17 @@ Reader::Reader() {}
 
 Reader::~Reader() {}
 
-void Reader::load(const char* fileName)
+bool Reader::load(const char* fileName)
 {
 	std::ifstream objFile;
 	objFile.open(fileName);
 
 	if (!objFile){
 		printf("Failed to open the file !\n");
-		return;
+		return false;
+	}
+	else{
+		clearVector();
 	}
 
 	while (objFile.peek() != EOF){
@@ -47,7 +49,6 @@ void Reader::load(const char* fileName)
 					std::string p;
 					ss >> p;
 					if (isdigit(p[0])){
-						//std::cout << p << " ";
 						points.push_back(atoi(p.c_str()));
 					}
 				}
@@ -67,27 +68,24 @@ void Reader::load(const char* fileName)
 		}
 		std::cout << std::endl;
 	}*/
-
+	return true;
 }
 
 void Reader::draw(int colorMode)
 {
 	for (int i = 0; i < vectorOfFace.size(); i++){
 		float r = 0.0;
-		float g = 0.0;
+		float g = 1.0;
 		float b = 0.0;
-		if (colorMode == 1){
-			r = 0.0;
-			g = 1.0;
-			b = 0.0;
-		}
-		else if (colorMode == 2){
+
+		if (colorMode == 2){
 			r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 			g = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 			b = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 		}
+
 		glColor3f(r, g, b);
-		glBegin(GL_TRIANGLES);
+		glBegin(GL_POLYGON);
 		for (int j = 0; j < vectorOfFace[i].size(); j++){
 			int indexOfVertex = vectorOfFace[i][j] - 1;
 			glVertex3d(vectorOfVertex[indexOfVertex].x, vectorOfVertex[indexOfVertex].y, vectorOfVertex[indexOfVertex].z);
@@ -101,8 +99,8 @@ int Reader::getSizeOfVertex(){
 	return vectorOfVertex.size();
 }
 
-Range Reader::getRange(){
-	return range;
+Ortho Reader::getOrtho(){
+	return ortho;
 }
 
 void Reader::clearVector(){
@@ -111,36 +109,19 @@ void Reader::clearVector(){
 }
 
 void Reader::findViewRange(){
-	double maxX;
-	double minX;
-	double maxY;
-	double minY;
-	double maxZ;
-	double minZ;
-	
 	std::vector<Vertex> sortedVectorOfVertex(vectorOfVertex);
-	std::sort(sortedVectorOfVertex.begin(), sortedVectorOfVertex.end(), EntityComp(1));
-	maxX = sortedVectorOfVertex[sortedVectorOfVertex.size() - 1].x;
-	minX = sortedVectorOfVertex[0].x;
+	std::sort(sortedVectorOfVertex.begin(), sortedVectorOfVertex.end(), ElememtCMP(1));
+	ortho.maxOfX = abs(sortedVectorOfVertex[0].x);
 	
-	std::sort(sortedVectorOfVertex.begin(), sortedVectorOfVertex.end(), EntityComp(2));
-	maxY = sortedVectorOfVertex[sortedVectorOfVertex.size() - 1].y;
-	minY = sortedVectorOfVertex[0].y;
+	std::sort(sortedVectorOfVertex.begin(), sortedVectorOfVertex.end(), ElememtCMP(2));
+	ortho.maxOfY = abs(sortedVectorOfVertex[0].y);
 	
-	std::sort(sortedVectorOfVertex.begin(), sortedVectorOfVertex.end(), EntityComp(3));
-	maxZ = sortedVectorOfVertex[sortedVectorOfVertex.size() - 1].z;
-	minZ = sortedVectorOfVertex[0].z;
-	
-	std::cout << maxX << " " << minX << std::endl;
-	std::cout << maxY << " " << minY << std::endl;
-	std::cout << maxZ << " " << maxZ << std::endl;
+	std::sort(sortedVectorOfVertex.begin(), sortedVectorOfVertex.end(), ElememtCMP(3));
+	ortho.maxOfZ = abs(sortedVectorOfVertex[0].z);
 
-	range.maxOfX = std::max(abs(maxX), abs(minX));
-	range.maxOfY = std::max(abs(maxY), abs(minY));
-	range.maxOfZ = std::max(abs(maxZ), abs(minZ));
-	//std::cout << range.maxOfX;
-
-	/*for (int i = 0; i < vectorOfVertex.size(); i++){
-		std::cout << i << ": " << vectorOfVertex[i].x << " " << vectorOfVertex[i].y << " " << vectorOfVertex[i].z << std::endl;
-	}*/
+	ortho.fitRange = std::max(ortho.maxOfX, ortho.maxOfY);
+	
+	/*std::cout << ortho.maxOfX << std::endl;
+	std::cout << ortho.maxOfY << std::endl;
+	std::cout << ortho.maxOfZ << std::endl;*/
 }

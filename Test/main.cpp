@@ -1,10 +1,11 @@
-#include "..\Dependencies\glew\glew.h"
+//#include "..\Dependencies\glew\glew.h"
 #include "..\Dependencies\freeglew\freeglut.h"
 #include "ObjReader.h"
 #include <iostream>
 #include <cmath>
-#include <Windows.h>
-#include <Commdlg.h>
+#include <string>
+
+using namespace std;
 
 #define PI 3.14159265
 
@@ -13,9 +14,11 @@ const char* LAMP_FILE_PATH = "obj/lamp.obj";
 const char* OCTAHEDRON_FILE_PATH = "obj/octahedron.obj";
 const char* TEAPOT_FILE_PATH = "obj/teapot.obj";
 const char* TEDDY_FILE_PATH = "obj/teddy.obj";
+
+const char* filePath;
+
 int colorMode = 1;
 Reader reader;
-
 
 
 class AffineTrans{
@@ -44,20 +47,20 @@ void drawGlobalAxis(){
 	// draw line for x axis
 	glBegin(GL_LINE_STRIP);
 	glColor3f(1.0, 0.0, 0.0);
-	glVertex3f(-10.0, 0.0, 0.0);
-	glVertex3f(10.0, 0.0, 0.0);
+	glVertex3f(-100.0, 0.0, 0.0);
+	glVertex3f(100.0, 0.0, 0.0);
 	glEnd();
 	// draw line for y axis
 	glBegin(GL_LINE_STRIP);
 	glColor3f(0.0, 1.0, 0.0);
-	glVertex3f(0.0, 10.0, 0.0);
-	glVertex3f(0.0, -10.0, 0.0);
+	glVertex3f(0.0, 100.0, 0.0);
+	glVertex3f(0.0, -100.0, 0.0);
 	glEnd();
 	// draw line for Z axis
 	glBegin(GL_LINE_STRIP);
 	glColor3f(0.0, 0.0, 1.0);
-	glVertex3f(0.0, 0.0, 10.0);
-	glVertex3f(0.0, 0.0, -10.0);
+	glVertex3f(0.0, 0.0, 100.0);
+	glVertex3f(0.0, 0.0, -100.0);
 	glEnd();
 
 }
@@ -103,7 +106,7 @@ void renderScene(void){
 	glRotatef(affine.thetaZ, 0.0, 0.0, 1.0);
 	
 	reader.draw(colorMode);
-	
+	//glutSolidCube(1);
 
 	
 	drawLocalAxis();
@@ -130,20 +133,18 @@ void setupRC()
 	// Enable color tracking
 	glEnable(GL_COLOR_MATERIAL);
 	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_BACK);
 }
 
 void changeSize(int w, int h){
-	std::cout << "change size" << std::endl;
 	reader.findViewRange();
-	Range range = reader.getRange();
-	//std::cout << range.maxOfX << std::endl;
-	//std::cout << range.maxOfY << std::endl;
-	//std::cout << range.maxOfZ << std::endl;
+	Ortho ortho = reader.getOrtho();
 
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(-range.maxOfX * 2, range.maxOfX * 2, -range.maxOfY * 2, range.maxOfY * 2, -200, 200);
+	glOrtho(-ortho.fitRange * 2.0, ortho.fitRange * 2.0, -ortho.fitRange * 2.0, ortho.fitRange * 2.0, -200, 200);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
@@ -227,14 +228,6 @@ void myMouse(int button, int state, int x, int y){
 }
 
 
-
-enum MENU_TYPE
-{
-	MENU_FILE,
-	MENU_RENDER_MODE,
-	MENU_COLOR_MODE,
-};
-
 // Menu handling function definition
 void mainMenu(int item)
 {
@@ -242,29 +235,48 @@ void mainMenu(int item)
 }
 
 void fileMenu(int item){
-	reader.clearVector();
 	switch (item){
 	case 1:
 		std::cout << "file 1" << std::endl;
+		filePath = GOURD_FILE_PATH;
 		reader.load(GOURD_FILE_PATH);
 		break;
 	case 2:
 		std::cout << "file 2" << std::endl;
+		filePath = LAMP_FILE_PATH;
 		reader.load(LAMP_FILE_PATH);
 		break;
 	case 3:
 		std::cout << "file 3" << std::endl;
+		filePath = OCTAHEDRON_FILE_PATH;
 		reader.load(OCTAHEDRON_FILE_PATH);
 		break;
 	case 4:
 		std::cout << "file 4" << std::endl;
+		filePath = TEAPOT_FILE_PATH;
 		reader.load(TEAPOT_FILE_PATH);
 		break;
 	case 5:
 		std::cout << "file 5" << std::endl;
+		filePath = TEDDY_FILE_PATH;
 		reader.load(TEDDY_FILE_PATH);
 		break;
+	case 6:
+		std::cout << "file 6" << std::endl;
+		std::cout << "Please input a obj file path : " << std::endl;
+		std::string path;
+		std::cin >> path;
+		filePath = path.c_str();
+		//std::cout << filePath << std::endl;
+		reader.load(filePath);
+		break;
 	}
+	//reader.load(filePath);
+
+	//if (reader.load(filePath)){
+		//reader.clearVector();
+	//}
+
 	changeSize(500, 500);
 	glutPostRedisplay();
 };
@@ -307,6 +319,7 @@ void createMenu(void){
 	glutAddMenuEntry("Octahedron", 3);
 	glutAddMenuEntry("Teapot", 4);
 	glutAddMenuEntry("Teddy", 5);
+	glutAddMenuEntry("Browse(CMD Input)", 6);
 
 
 	render = glutCreateMenu(renderMenu);
@@ -323,7 +336,6 @@ void createMenu(void){
 	glutAddSubMenu("Render Mode", render);
 	glutAddSubMenu("Colors Mode", colors);
 	glutAttachMenu(GLUT_RIGHT_BUTTON);
-
 }
 
 
